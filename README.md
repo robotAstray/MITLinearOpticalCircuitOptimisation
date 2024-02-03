@@ -21,7 +21,7 @@ The project was developed using a virtual environment. Please follow the steps b
 1. Clone the repository to your local machine:
 
    ```bash
-   git clone https://github.com/your-username/your-project.git
+   [git clone https://github.com/your-username/your-project.git](https://github.com/robotAstray/MITLinearOpticsOptimisation.git)
 2. 
 ## 3. Usage
 ## 4. Optimization Techniques
