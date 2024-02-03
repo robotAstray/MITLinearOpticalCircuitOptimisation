@@ -1,4 +1,4 @@
-# Linear Optics Optimisation
+# Linear Optical Circuits Optimisation
 MIT Quantum Computing Competition - Quandela Challenge
 
 ## Table of Contents
