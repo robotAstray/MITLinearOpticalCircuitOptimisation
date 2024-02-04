@@ -67,8 +67,8 @@ def get_score(criteria_key: str, criteria: dict, value: list[float, int]) -> flo
     if direction_type == DirectionType.minus:
         score = -score
 
-    print(
-        f"For criteria {criteria_key}, penalty type is {method_type.name}, direction criteria type is {direction_type.name}, weight is {crit[CriteriaArgs.weight.name]}, penalty value is {value}, score is {score}")
+    #print(
+    #    f"For criteria {criteria_key}, penalty type is {method_type.name}, direction criteria type is {direction_type.name}, weight is {crit[CriteriaArgs.weight.name]}, penalty value is {value}, score is {score}")
     return score
 
 
@@ -165,8 +165,7 @@ def rate_processor(
     return score
 
 
-def score_processor():
-    from main import get_CCZ
+def score_processor(processor):
     criteria = {
         'n_photons': {
             'method': 'log',
@@ -202,7 +201,7 @@ def score_processor():
     target = {"000": "000", "001": "001", "010": "010", "011": "011",
               "100": "100", "101": "101", "110": "111", "111": "110"}
 
-    return rate_processor(get_CCZ(), mapping, target, criteria, GateType.CCZ, [pcvl.BasicState("|0,1,0,1,0,1>")])
+    return rate_processor(processor, mapping, target, criteria, GateType.CCZ, [pcvl.BasicState("|0,1,0,1,0,1>")])
 
 if __name__ == "__main__":
     from main import get_CCZ
