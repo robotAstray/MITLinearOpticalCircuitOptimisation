@@ -4,8 +4,70 @@ from auto_grader import score_processor
 from scipy.optimize import minimize
 import random
 
+import perceval as pcvl
+from perceval.components.unitary_components import PS, BS, PERM
+from perceval.components import Circuit, Processor, PERM, BS, Port
+import numpy as np
+from perceval.utils import Encoding, PostSelect
+from perceval.components import BS, Circuit, catalog
 
 
+def create_ccz_with_cnot_and_rx_and_hadamard():
+    QPU = pcvl.Processor("SLOS", 6)
+
+    QPU.add_port(0, Port(Encoding.DUAL_RAIL, 'ctrl0'))
+    QPU.add_port(2, Port(Encoding.DUAL_RAIL, 'ctrl1'))
+    QPU.add_port(4, Port(Encoding.DUAL_RAIL, 'data'))
+
+    QPU.add([2, 3, 4, 5], catalog["heralded cnot"].build_processor())
+
+    theta = np.pi / 4
+
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=-theta))
+    QPU.add(4, BS.H())
+
+
+    QPU.add([0, 1, 4, 5], catalog["heralded cnot"].build_processor())
+
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=theta))
+    QPU.add(4, BS.H())
+
+    QPU.add([2, 3, 4, 5], catalog["heralded cnot"].build_processor())
+
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=-theta))
+    QPU.add(4, BS.H())
+
+    QPU.add([0, 1, 4, 5], catalog["heralded cnot"].build_processor())
+
+    QPU.add(2, BS.H())
+    QPU.add(2, BS.Rx(theta=theta))
+    QPU.add(2, BS.H())
+
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=theta))
+    QPU.add(4, BS.H())
+
+    QPU.add([0, 1, 2, 3], catalog["heralded cnot"].build_processor())
+
+    QPU.add(0, BS.H())
+    QPU.add(0, BS.Rx(theta=theta))
+    QPU.add(0, BS.H())
+
+    QPU.add(2, BS.H())
+    QPU.add(2, BS.Rx(theta=-theta))
+    QPU.add(2, BS.H())
+
+    pcvl.pdisplay(QPU, recursive=False)
+
+    return QPU
+
+def get_CCZ() -> pcvl.Processor:
+    return create_ccz_with_cnot_and_rx_and_hadamard()
+    return pcvl.catalog["postprocessed ccz"].build_processor()
+    #return create_ansatz()
 
 def create_ansatz(ancillas):
     # Processor(kwargs.get("backend", "SLOS"), self.build_circuit(**kwargs), name=kwargs.get("name"))
@@ -35,9 +97,7 @@ def optimize_ansatz(ansatz):
 
     """
 
-def get_CCZ() -> pcvl.Processor:
-    return pcvl.catalog["postprocessed ccz"].build_processor()
-    #return create_ansatz()
+
 
 
 

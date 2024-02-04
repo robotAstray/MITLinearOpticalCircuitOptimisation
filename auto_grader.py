@@ -134,6 +134,7 @@ def rate_processor(
         cnot.add(h_mode, pcvl.BS.H())
 
     analyzer = pcvl.algorithm.Analyzer(cnot, mapping)
+    print("Computing analyzer")
     analyzer.compute(expected=target)
     score = 0
 
