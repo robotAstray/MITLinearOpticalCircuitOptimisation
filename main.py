@@ -1,44 +1,210 @@
 #This is an example of the file you must have in your main git branch
 import perceval as pcvl
-from auto_grader import score_processor
+from auto_grader import loss_function_prob_amplitudes
 from scipy.optimize import minimize
 import random
 
+import perceval as pcvl
+from perceval.components.unitary_components import PS, BS, PERM
+from perceval.components import Circuit, Processor, PERM, BS, Port
+import numpy as np
+from perceval.utils import Encoding, PostSelect
+from perceval.components import BS, Circuit, catalog
+from scipy import optimize
 
 
+def create_ccz_with_cnot_and_rx_and_hadamard(cnot="postprocessed cnot"):
+    QPU = pcvl.Processor("SLOS", 6)
 
-def create_ansatz(ancillas):
-    # Processor(kwargs.get("backend", "SLOS"), self.build_circuit(**kwargs), name=kwargs.get("name"))
-    List_Parameters=[]
+    QPU.add_port(0, Port(Encoding.DUAL_RAIL, 'ctrl0'))
+    QPU.add_port(2, Port(Encoding.DUAL_RAIL, 'ctrl1'))
+    QPU.add_port(4, Port(Encoding.DUAL_RAIL, 'data'))
 
-    p = pcvl.Processor("SLOS", 6 + ancillas)
+    QPU.add([2, 3, 4, 5], catalog[cnot].build_processor())
+
+    theta = np.pi / 4
+
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=-theta))
+    QPU.add(4, BS.H())
 
 
-    return p, List_Parameters
+    QPU.add([0, 1, 4, 5], catalog[cnot].build_processor())
 
-def optimize_ansatz(ansatz):
-    """
-    tq = tqdm(desc='Minimizing...') #Displaying progress bar
-    radius1=[]
-    E1=[]
-    init_param=[]
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=theta))
+    QPU.add(4, BS.H())
 
-    H=H1
+    QPU.add([2, 3, 4, 5], catalog[cnot].build_processor())
 
-    for R in range(len(H)):            #We try to find the ground state eigenvalue for each radius R
-        radius1.append(H[R][0])
-        if (init_param==[]):           #
-                init_param = [2*(np.pi)*random.random() for _ in List_Parameters]
-        else:
-            for i in range(len(init_param)):
-                init_param[i]=p.get_parameters()[i]._value
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=-theta))
+    QPU.add(4, BS.H())
 
-    """
+    QPU.add([0, 1, 4, 5], catalog[cnot].build_processor())
 
-def get_CCZ() -> pcvl.Processor:
-    return pcvl.catalog["postprocessed ccz"].build_processor()
+    QPU.add(2, BS.H())
+    QPU.add(2, BS.Rx(theta=theta))
+    QPU.add(2, BS.H())
+
+    QPU.add(4, BS.H())
+    QPU.add(4, BS.Rx(theta=theta))
+    QPU.add(4, BS.H())
+
+    QPU.add([0, 1, 2, 3], catalog[cnot].build_processor())
+
+    QPU.add(0, BS.H())
+    QPU.add(0, BS.Rx(theta=theta))
+    QPU.add(0, BS.H())
+
+    QPU.add(2, BS.H())
+    QPU.add(2, BS.Rx(theta=-theta))
+    QPU.add(2, BS.H())
+
+
+    return QPU
+
     #return create_ansatz()
 
+def VQE_optimise_params():
+    #List of the parameters φ1,φ2,...,φ8
+    List_Parameters=[] # to store the parameters used in the ansatz.
+    # VQE is a 6 optical mode circuit
+    VQE=pcvl.Circuit(9) # Circuit Initialization
+    # add entry for mode 0
+
+    List_Parameters.append(pcvl.Parameter("φ1"))
+    VQE.add((1, 3),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ2"))
+    VQE.add((3, 5),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ3"))
+    VQE.add((5, ),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ4"))
+    VQE.add((5,),pcvl.PS(phi=List_Parameters[-1]))
+
+    return VQE
+
+def create_vqe_ansatz_old():
+    List_Parameters = []
+    VQE=pcvl.Circuit(6)
+
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+    List_Parameters.append(pcvl.Parameter("φ1"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ3"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+    List_Parameters.append(pcvl.Parameter("φ2"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ4"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+
+
+    # CNOT ( Post-selected with a success probability of 1/9)
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the purpose of drawing a nice circuit
+    VQE.add((3,4), pcvl.BS())
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the same purpose
+    VQE.add((0,1), pcvl.BS(pcvl.BS.r_to_theta(1/3)))
+    VQE.add((2,3), pcvl.BS(pcvl.BS.r_to_theta(1/3)))
+    VQE.add((4,5), pcvl.BS(pcvl.BS.r_to_theta(1/3)))
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the same purpose
+    VQE.add((3,4), pcvl.BS())
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the same purpose
+
+    List_Parameters.append(pcvl.Parameter("φ5"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ7"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+    List_Parameters.append(pcvl.Parameter("φ6"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ8"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+
+    return VQE
+
+
+N = 9
+def create_vqe_ansatz():
+    #List of the parameters φ1,φ2,...,φ8
+    List_Parameters=[] # to store the parameters used in the ansatz.
+    # VQE is a 6 optical mode circuit
+    VQE=pcvl.Processor("SLOS", N) # Circuit Initialization
+
+    VQE.add_port(0, Port(Encoding.DUAL_RAIL, 'ctrl0'))
+    VQE.add_port(2, Port(Encoding.DUAL_RAIL, 'ctrl1'))
+    VQE.add_port(4, Port(Encoding.DUAL_RAIL, 'data'))
+
+    VQE.add([0, 1], pcvl.BS())
+    VQE.add([2, 3], pcvl.BS())
+    VQE.add([4, 5], pcvl.BS())
+    # add Beam Splitter on mode 1, 3, 5
+    List_Parameters.append(pcvl.Parameter("φ1"))
+    VQE.add([1],pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ2"))
+    VQE.add([3],pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ3"))
+    VQE.add([5],pcvl.PS(phi=List_Parameters[-1]))
+
+
+    VQE = VQE.add_herald(6,0).add_herald(7,0).add_herald(8,0)
+    VQE.set_postselection(PostSelect("[0,1]==1 & [2,3]==1 & [4,5]==1"))
+
+    return VQE
+
+def create_ansatz():
+
+    return create_vqe_ansatz()
+    
+
+def assign_processor_params(processor, params):
+    param_circuit = processor.get_circuit_parameters()
+
+    for i, (k, param) in enumerate(param_circuit.items()):
+        param.set_value(params[i])
+
+def loss_function(params):
+    # Assign parameters to circuit
+    ansatz = create_ansatz()
+
+    assign_processor_params(ansatz, params)
+
+    loss = loss_function_prob_amplitudes(ansatz)
+    print(f"{loss=}")
+
+    return loss
+def optimize_ansatz():
+    ansatz = create_ansatz()
+    param_circuit = ansatz.get_circuit_parameters()
+    n_params = len(param_circuit)
+    print(f"{n_params=}")
+    params_init = [random.random()*np.pi for _ in param_circuit]
+    
+    methods = ["COBYLA"]
+
+    o = optimize.minimize(loss_function, params_init, method="COBYLA", options={"maxiter": 1000 })
+
+
+    return o.x
+
+
+def get_CCZ():
+    ansatz = create_ansatz()
+    best_params = optimize_ansatz()
+
+    assign_processor_params(ansatz, best_params)
+
+    return ansatz 
 
 
 def get_performance_and_fidelity(ccz_processor):
@@ -61,7 +227,7 @@ def get_performance_and_fidelity(ccz_processor):
 
     ca = pcvl.algorithm.Analyzer(processor, states)
 
-    pcvl.pdisplay(processor, recursive=False)
+    #pcvl.pdisplay(processor, recursive=False)
 
     truth_table = {
         "000": "000",  # No change
@@ -76,21 +242,22 @@ def get_performance_and_fidelity(ccz_processor):
 
     ca.compute(expected=truth_table)
 
+    state = pcvl.BasicState("|0,1,0,1,0,1>")
+
+    sim = pcvl.SimulatorFactory().build(processor)
+
     return ca.performance, ca.fidelity.real
 
 
-ccz = get_CCZ()
-
-
-def loss_function(processor):
-
-    return -score_processor(processor)
+optimize_ansatz()
+#ccz = get_CCZ()
 
 
 
 
-performance, fidelity = get_performance_and_fidelity(ccz)
-score = score_processor()
 
-print(f"{performance=}, {fidelity=}")
-print(f"{score=}")
+#performance, fidelity = get_performance_and_fidelity(ccz)
+#score = score_processor()
+
+#print(f"{performance=}, {fidelity=}")
+#print(f"{score=}")

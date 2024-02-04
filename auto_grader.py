@@ -67,8 +67,8 @@ def get_score(criteria_key: str, criteria: dict, value: list[float, int]) -> flo
     if direction_type == DirectionType.minus:
         score = -score
 
-    print(
-        f"For criteria {criteria_key}, penalty type is {method_type.name}, direction criteria type is {direction_type.name}, weight is {crit[CriteriaArgs.weight.name]}, penalty value is {value}, score is {score}")
+    #print(
+    #    f"For criteria {criteria_key}, penalty type is {method_type.name}, direction criteria type is {direction_type.name}, weight is {crit[CriteriaArgs.weight.name]}, penalty value is {value}, score is {score}")
     return score
 
 
@@ -134,6 +134,7 @@ def rate_processor(
         cnot.add(h_mode, pcvl.BS.H())
 
     analyzer = pcvl.algorithm.Analyzer(cnot, mapping)
+    print("Computing analyzer")
     analyzer.compute(expected=target)
     score = 0
 
@@ -157,35 +158,20 @@ def rate_processor(
                                criteria, 1-analyzer.fidelity)
 
         elif current_criteria == CriteriaType.prob_amplitude_error:
-            get_proba_amplitude_error(cz, mapping.keys(), data_states)
+            error = get_proba_amplitude_error(cz, mapping.keys(), data_states)
+
             score += get_score(current_criteria.name,
-                               criteria, 1-analyzer.fidelity)
+                               criteria, error)
 
     return score
 
 
-def score_processor():
-    from main import get_CCZ
+def loss_function_prob_amplitudes(processor):
     criteria = {
-        'n_photons': {
-            'method': 'log',
-            'direction': 'minus',
-            'weight': 1e-3
-        },
-        'n_modes': {
-            'method': 'log',
-            'direction': 'minus',
-            'weight': 1e-4
-        },
-        'performance': {
-            'method': 'log',
-            'direction': 'plus',
-            'weight': 10
-        },
         'prob_amplitude_error': {
-            'method': 'log',
+            'method': 'linear',
             'direction': 'minus',
-            'weight': 1e7
+            'weight': 1
         }
     }
 
@@ -201,7 +187,7 @@ def score_processor():
     target = {"000": "000", "001": "001", "010": "010", "011": "011",
               "100": "100", "101": "101", "110": "111", "111": "110"}
 
-    return rate_processor(get_CCZ(), mapping, target, criteria, GateType.CCZ, [pcvl.BasicState("|0,1,0,1,0,1>")])
+    return rate_processor(processor, mapping, target, criteria, GateType.CCZ, [pcvl.BasicState("|0,1,0,1,0,1>")])
 
 if __name__ == "__main__":
     from main import get_CCZ
