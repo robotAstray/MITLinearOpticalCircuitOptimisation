@@ -143,7 +143,9 @@ def create_vqe_ansatz():
     VQE.add_port(2, Port(Encoding.DUAL_RAIL, 'ctrl1'))
     VQE.add_port(4, Port(Encoding.DUAL_RAIL, 'data'))
 
-
+    VQE.add([0, 1], pcvl.BS())
+    VQE.add([2, 3], pcvl.BS())
+    VQE.add([4, 5], pcvl.BS())
     # add Beam Splitter on mode 1, 3, 5
     List_Parameters.append(pcvl.Parameter("φ1"))
     VQE.add([1],pcvl.PS(phi=List_Parameters[-1]))
@@ -190,7 +192,7 @@ def optimize_ansatz():
     
     methods = ["COBYLA"]
 
-    o = optimize.minimize(loss_function, params_init, method="COBYLA", options={"maxiter": 100, "rhobge": 0.2})
+    o = optimize.minimize(loss_function, params_init, method="COBYLA", options={"maxiter": 1000 })
 
 
     return o.x
