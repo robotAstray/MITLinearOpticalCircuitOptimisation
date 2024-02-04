@@ -76,7 +76,7 @@ def create_ccz_with_cnot_and_rx_and_hadamard() -> pcvl.Processor:
     QPU.add_port(4, Port(Encoding.DUAL_RAIL, 'data'))
     QPU.add_herald(6, 0) \
     QPU.add_herald(7, 1) \
-    QPU.add_herald(8, )
+    QPU.add_herald(8, 0)
         
     # Build the CCZ circuit
     QPU.add([2, 3, 4, 5], cnot)  # CNOT on qubits 2 and 3 (control) and 4 (target)
