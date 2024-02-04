@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-
 # Designing Optical Circuit using Perceval Quandela
 # We are going to use 9 modes
 # 3 qubits and 3 ancilla modes
@@ -18,7 +16,7 @@
 # | 0   0   0   0   1   0   0   0   0 |
 # | 0   0   0   0   0   φ3  0   0   0 |
 # | 0   0   0   0   0   0   1   0   0 |
-# | 0   0   0   0   0   0   0   d   0 |
+# | 0   0   0   0   0   0   0   1  0 |
 # | 0   0   0   0   0   0   0   0   1 |
 
 # Import libraries 
@@ -39,6 +37,7 @@ simulator = pcvl.Simulator(pcvl.NaiveBackend())
      
 
 import numpy as np
+
 
 
 def get_CNOT() -> pcvl.Processor:
@@ -126,12 +125,48 @@ def create_ccz_with_cnot_and_rx_and_hadamard() -> pcvl.Processor:
 
 
 
-def VQE_optimise_params():
+def create_vqe_ansatz():
     #List of the parameters φ1,φ2,...,φ8
     List_Parameters=[] # to store the parameters used in the ansatz.
     # VQE is a 6 optical mode circuit
     VQE=pcvl.Circuit(9) # Circuit Initialization
-    pass
+    # add entry for mode 0
+
+    # add Beam Splitter on mode 1, 3, 5
+
+
+    List_Parameters.append(1)
+    VQE.add((0,),pcvl.PS(phi=List_Parameters[-1]))
+
+
+    VQE.add((0,1), pcvl.BS())
+    VQE.add((2,3), pcvl.BS())
+    VQE.add((4,5), pcvl.BS())
+
+    List_Parameters.append(pcvl.Parameter("φ1"))
+    VQE.add((1,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(1)
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ2"))
+    VQE.add((3,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(1)
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ3"))
+    VQE.add((5,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(1)
+    VQE.add((6,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ4"))
+    VQE.add((5,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(1)
+    VQE.add((6,),pcvl.PS(phi=List_Parameters[-1]))
+    return VQE
 
 def get_CCZ():
     return 
