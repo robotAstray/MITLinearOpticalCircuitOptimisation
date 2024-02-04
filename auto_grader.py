@@ -158,14 +158,15 @@ def rate_processor(
                                criteria, 1-analyzer.fidelity)
 
         elif current_criteria == CriteriaType.prob_amplitude_error:
-            get_proba_amplitude_error(cz, mapping.keys(), data_states)
+            error = get_proba_amplitude_error(cz, mapping.keys(), data_states)
+
             score += get_score(current_criteria.name,
-                               criteria, 1-analyzer.fidelity)
+                               criteria, error)
 
     return score
 
 
-def score_processor(processor):
+def loss_function_prob_amplitudes(processor):
     criteria = {
         'n_photons': {
             'method': 'log',
@@ -185,7 +186,7 @@ def score_processor(processor):
         'prob_amplitude_error': {
             'method': 'log',
             'direction': 'minus',
-            'weight': 1e7
+            'weight': 10
         }
     }
 

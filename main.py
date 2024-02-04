@@ -1,6 +1,6 @@
 #This is an example of the file you must have in your main git branch
 import perceval as pcvl
-from auto_grader import score_processor
+from auto_grader import loss_function_prob_amplitudes
 from scipy.optimize import minimize
 import random
 
@@ -66,6 +66,27 @@ def create_ccz_with_cnot_and_rx_and_hadamard(cnot="postprocessed cnot"):
 
     #return create_ansatz()
 
+def VQE_optimise_params():
+    #List of the parameters φ1,φ2,...,φ8
+    List_Parameters=[] # to store the parameters used in the ansatz.
+    # VQE is a 6 optical mode circuit
+    VQE=pcvl.Circuit(9) # Circuit Initialization
+    # add entry for mode 0
+
+    List_Parameters.append(pcvl.Parameter("φ1"))
+    VQE.add((1, 3),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ2"))
+    VQE.add((3, 5),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ3"))
+    VQE.add((5, ),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ4"))
+    VQE.add((5,),pcvl.PS(phi=List_Parameters[-1]))
+
+    return VQE
+
 def create_vqe_ansatz():
     List_Parameters = []
     VQE=pcvl.Circuit(6)
@@ -114,6 +135,7 @@ def create_ansatz():
 
     return create_vqe_ansatz()
     n = 6
+
     circuit = pcvl.GenericInterferometer(n,
         lambda i: BS(theta=pcvl.P(f"theta{i}"),
         phi_tr=pcvl.P(f"phi_tr{i}")),
@@ -130,14 +152,12 @@ def loss_function(params):
     for i, value in enumerate(params):
         param_circuit[i].set_value(value)
     # TODO: generalize n number of modes (right now 6... might change later)
-    processor = pcvl.Processor("SLOS", 6, ansatz)
+    processor = pcvl.Processor("SLOS", 9, ansatz)
 
-    performance, fidelity = get_performance_and_fidelity(processor)
-    print(f"{performance=} {fidelity=}")
-    loss = 1-fidelity
-    #loss = -score_processor(processor)
-    print(f"{-loss}")
-    return loss
+    #performance, fidelity = get_performance_and_fidelity(processor)
+    #print(f"{performance=} {fidelity=}")
+    #loss = 1-fidelity
+    return loss_function_prob_amplitudes(processor)
 
 def optimize_ansatz():
     ansatz = create_ansatz()
@@ -148,7 +168,7 @@ def optimize_ansatz():
     
     methods = ["COBYLA"]
 
-    o = optimize.minimize(loss_function, params_init, method="Powell", options={"maxiter": 1})
+    o = optimize.minimize(loss_function, params_init, method="COBYLA", options={"maxiter": 100, "rhobge": 0.2})
 
 
     return o.x
