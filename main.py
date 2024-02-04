@@ -87,7 +87,7 @@ def VQE_optimise_params():
 
     return VQE
 
-def create_vqe_ansatz():
+def create_vqe_ansatz_old():
     List_Parameters = []
     VQE=pcvl.Circuit(6)
 
@@ -131,37 +131,59 @@ def create_vqe_ansatz():
 
     return VQE
 
+
+N = 9
+def create_vqe_ansatz():
+    #List of the parameters φ1,φ2,...,φ8
+    List_Parameters=[] # to store the parameters used in the ansatz.
+    # VQE is a 6 optical mode circuit
+    VQE=pcvl.Processor("SLOS", N) # Circuit Initialization
+
+    VQE.add_port(0, Port(Encoding.DUAL_RAIL, 'ctrl0'))
+    VQE.add_port(2, Port(Encoding.DUAL_RAIL, 'ctrl1'))
+    VQE.add_port(4, Port(Encoding.DUAL_RAIL, 'data'))
+
+
+    # add Beam Splitter on mode 1, 3, 5
+    List_Parameters.append(pcvl.Parameter("φ1"))
+    VQE.add([1],pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ2"))
+    VQE.add([3],pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(pcvl.Parameter("φ3"))
+    VQE.add([5],pcvl.PS(phi=List_Parameters[-1]))
+
+
+    VQE = VQE.add_herald(6,0).add_herald(7,0).add_herald(8,0)
+    VQE.set_postselection(PostSelect("[0,1]==1 & [2,3]==1 & [4,5]==1"))
+
+    return VQE
+
 def create_ansatz():
 
     return create_vqe_ansatz()
-    n = 6
-
-    circuit = pcvl.GenericInterferometer(n,
-        lambda i: BS(theta=pcvl.P(f"theta{i}"),
-        phi_tr=pcvl.P(f"phi_tr{i}")),
-        phase_shifter_fun_gen=lambda i: PS(phi=pcvl.P(f"phi{i}")))
     
-    return circuit
 
+def assign_processor_params(processor, params):
+    param_circuit = processor.get_circuit_parameters()
+
+    for i, (k, param) in enumerate(param_circuit.items()):
+        param.set_value(params[i])
 
 def loss_function(params):
     # Assign parameters to circuit
     ansatz = create_ansatz()
-    param_circuit = ansatz.get_parameters()
 
-    for i, value in enumerate(params):
-        param_circuit[i].set_value(value)
-    # TODO: generalize n number of modes (right now 6... might change later)
-    processor = pcvl.Processor("SLOS", 9, ansatz)
+    assign_processor_params(ansatz, params)
 
-    #performance, fidelity = get_performance_and_fidelity(processor)
-    #print(f"{performance=} {fidelity=}")
-    #loss = 1-fidelity
-    return loss_function_prob_amplitudes(processor)
+    loss = loss_function_prob_amplitudes(ansatz)
+    print(f"{loss=}")
 
+    return loss
 def optimize_ansatz():
     ansatz = create_ansatz()
-    param_circuit = ansatz.get_parameters()
+    param_circuit = ansatz.get_circuit_parameters()
     n_params = len(param_circuit)
     print(f"{n_params=}")
     params_init = [random.random()*np.pi for _ in param_circuit]
@@ -177,13 +199,10 @@ def optimize_ansatz():
 def get_CCZ():
     ansatz = create_ansatz()
     best_params = optimize_ansatz()
-    param_circuit = ansatz.get_parameters()
 
-    for i, value in enumerate(best_params):
-        param_circuit[i].set_value(value)
+    assign_processor_params(ansatz, best_params)
 
-    # TODO: generalize n number of modes (right now 6... might change later)
-    return pcvl.Processor("SLOS", 6, ansatz)
+    return ansatz 
 
 
 def get_performance_and_fidelity(ccz_processor):

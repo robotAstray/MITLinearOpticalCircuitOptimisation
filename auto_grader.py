@@ -168,25 +168,10 @@ def rate_processor(
 
 def loss_function_prob_amplitudes(processor):
     criteria = {
-        'n_photons': {
-            'method': 'log',
-            'direction': 'minus',
-            'weight': 1e-3
-        },
-        'n_modes': {
-            'method': 'log',
-            'direction': 'minus',
-            'weight': 1e-4
-        },
-        'performance': {
-            'method': 'log',
-            'direction': 'plus',
-            'weight': 10
-        },
         'prob_amplitude_error': {
-            'method': 'log',
+            'method': 'linear',
             'direction': 'minus',
-            'weight': 10
+            'weight': 1
         }
     }
 
