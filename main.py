@@ -61,14 +61,58 @@ def create_ccz_with_cnot_and_rx_and_hadamard(cnot="postprocessed cnot"):
     QPU.add(2, BS.Rx(theta=-theta))
     QPU.add(2, BS.H())
 
-    pcvl.pdisplay(QPU, recursive=False)
 
     return QPU
 
     #return create_ansatz()
 
+def create_vqe_ansatz():
+    List_Parameters = []
+    VQE=pcvl.Circuit(6)
+
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+    List_Parameters.append(pcvl.Parameter("φ1"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ3"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+    List_Parameters.append(pcvl.Parameter("φ2"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ4"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+
+
+    # CNOT ( Post-selected with a success probability of 1/9)
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the purpose of drawing a nice circuit
+    VQE.add((3,4), pcvl.BS())
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the same purpose
+    VQE.add((0,1), pcvl.BS(pcvl.BS.r_to_theta(1/3)))
+    VQE.add((2,3), pcvl.BS(pcvl.BS.r_to_theta(1/3)))
+    VQE.add((4,5), pcvl.BS(pcvl.BS.r_to_theta(1/3)))
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the same purpose
+    VQE.add((3,4), pcvl.BS())
+    VQE.add([0,1,2,3,4,5], pcvl.PERM([0,1,2,3,4,5]))#Identity PERM (permutation) for the same purpose
+
+    List_Parameters.append(pcvl.Parameter("φ5"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ7"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+    List_Parameters.append(pcvl.Parameter("φ6"))
+    VQE.add((2,),pcvl.PS(phi=List_Parameters[-1]))
+    List_Parameters.append(pcvl.Parameter("φ8"))
+    VQE.add((4,),pcvl.PS(phi=List_Parameters[-1]))
+    VQE.add((1,2), pcvl.BS())
+    VQE.add((3,4), pcvl.BS())
+
+    return VQE
+
 def create_ansatz():
 
+    return create_vqe_ansatz()
     n = 6
     circuit = pcvl.GenericInterferometer(n,
         lambda i: BS(theta=pcvl.P(f"theta{i}"),
@@ -87,7 +131,11 @@ def loss_function(params):
         param_circuit[i].set_value(value)
     # TODO: generalize n number of modes (right now 6... might change later)
     processor = pcvl.Processor("SLOS", 6, ansatz)
-    loss = -score_processor(processor)
+
+    performance, fidelity = get_performance_and_fidelity(processor)
+    print(f"{performance=} {fidelity=}")
+    loss = 1-fidelity
+    #loss = -score_processor(processor)
     print(f"{-loss}")
     return loss
 
@@ -100,7 +148,7 @@ def optimize_ansatz():
     
     methods = ["COBYLA"]
 
-    o = optimize.minimize(loss_function, params_init, method="Powell", options={"maxiter": 1000})
+    o = optimize.minimize(loss_function, params_init, method="Powell", options={"maxiter": 1})
 
 
     return o.x
@@ -138,7 +186,7 @@ def get_performance_and_fidelity(ccz_processor):
 
     ca = pcvl.algorithm.Analyzer(processor, states)
 
-    pcvl.pdisplay(processor, recursive=False)
+    #pcvl.pdisplay(processor, recursive=False)
 
     truth_table = {
         "000": "000",  # No change
@@ -153,7 +201,12 @@ def get_performance_and_fidelity(ccz_processor):
 
     ca.compute(expected=truth_table)
 
+    state = pcvl.BasicState("|0,1,0,1,0,1>")
+
+    sim = pcvl.SimulatorFactory().build(processor)
+
     return ca.performance, ca.fidelity.real
+
 
 optimize_ansatz()
 #ccz = get_CCZ()
