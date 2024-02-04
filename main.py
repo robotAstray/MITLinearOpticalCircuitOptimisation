@@ -74,7 +74,11 @@ def create_ccz_with_cnot_and_rx_and_hadamard() -> pcvl.Processor:
     QPU.add_port(0, Port(Encoding.DUAL_RAIL, 'ctrl0'))
     QPU.add_port(2, Port(Encoding.DUAL_RAIL, 'ctrl1'))
     QPU.add_port(4, Port(Encoding.DUAL_RAIL, 'data'))
-        # Build the CCZ circuit
+    QPU.add_herald(6, 0) \
+    QPU.add_herald(7, 1) \
+    QPU.add_herald(8, )
+        
+    # Build the CCZ circuit
     QPU.add([2, 3, 4, 5], cnot)  # CNOT on qubits 2 and 3 (control) and 4 (target)
 
     # Add T-dagger gate to qubit 2
@@ -166,6 +170,12 @@ def create_vqe_ansatz():
 
     List_Parameters.append(1)
     VQE.add((6,),pcvl.PS(phi=List_Parameters[-1]))
+
+    List_Parameters.append(1)
+    VQE.add((7,),pcvl.PS(phi=List_Parameters[-1]))
+    
+    List_Parameters.append(1)
+    VQE.add((8,),pcvl.PS(phi=List_Parameters[-1]))
     return VQE
 
 def get_CCZ():
